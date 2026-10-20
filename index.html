@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Library</title>
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 2rem auto; 
+            padding: 0 1.5rem; 
+            color: #333;
+            background-color: #f9f9f9;
+        }
+        h1 { 
+            border-bottom: 2px solid #eaecef; 
+            padding-bottom: 0.3em;
+        }
+        .file-list { 
+            list-style-type: none; 
+            padding: 0; 
+        }
+        .file-list li { 
+            margin: 12px 0; 
+            padding: 16px; 
+            background: #ffffff; 
+            border: 1px solid #e1e4e8;
+            border-radius: 6px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .file-list li:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .file-list a { 
+            text-decoration: none; 
+            color: #0366d6; 
+            font-weight: 600; 
+            font-size: 1.1em; 
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .file-list a:hover { 
+            text-decoration: underline; 
+        }
+        .status { 
+            color: #586069; 
+            font-style: italic; 
+            padding: 15px 0;
+        }
+        .error { 
+            color: #cb2431; 
+            background: #ffeef0;
+            padding: 15px;
+            border-radius: 6px;
+            border: 1px solid #f8aaaa;
+            font-style: normal;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Document Library</h1>
+    <p>Available PDF files in this repository:</p>
+    
+    <div id="status" class="status">Fetching files from GitHub...</div>
+    <ul id="pdf-list" class="file-list"></ul>
+
+    <script>
+        // Default fallback values if not viewed on GitHub Pages
+        let owner = 'YOUR_GITHUB_USERNAME'; 
+        let repo = 'YOUR_REPOSITORY_NAME';  
+
+        // Automatically detect username and repo from standard GitHub Pages URL
+        if (window.location.hostname.includes('.github.io')) {
+            owner = window.location.hostname.split('.')[0];
+            const pathSegments = window.location.pathname.split('/').filter(Boolean);
+            if (pathSegments.length > 0) {
+                repo = pathSegments[0];
+            }
+        }
+
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/`;
+
+        async function loadPDFs() {
+            const statusEl = document.getElementById('status');
+            const listEl = document.getElementById('pdf-list');
+
+            if (owner === 'YOUR_GITHUB_USERNAME') {
+                statusEl.innerHTML = '<div class="error"><strong>Setup Required:</strong> Please replace YOUR_GITHUB_USERNAME and YOUR_REPOSITORY_NAME in the HTML file, or ensure you are viewing this via a GitHub Pages link.</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(apiUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+                }
+                
+                const files = await response.json();
+                
+                // Filter only files that end in .pdf (case-insensitive)
+                const pdfs = files.filter(file => file.type === 'file' && file.name.toLowerCase().endsWith('.pdf'));
+
+                statusEl.style.display = 'none';
+
+                if (pdfs.length === 0) {
+                    listEl.innerHTML = '<li>No PDF files found in the root directory.</li>';
+                    return;
+                }
+
+                pdfs.forEach(pdf => {
+                    const li = document.createElement('li');
+                    const a = document.createElement('a');
+                    
+                    // Because the index and the PDFs are in the same folder, we can just use the filename
+                    a.href = pdf.name; 
+                    a.innerHTML = `📄 ${pdf.name}`;
+                    a.target = '_blank'; // Opens the PDF in a new browser tab
+                    
+                    li.appendChild(a);
+                    listEl.appendChild(li);
+                });
+
+            } catch (error) {
+                statusEl.innerHTML = `<div class="error"><strong>Failed to load files:</strong> ${error.message}<br><br><small>Note: This requires the repository to be public.</small></div>`;
+            }
+        }
+
+        // Initialize the fetch
+        loadPDFs();
+    </script>
+</body>
+</html>
